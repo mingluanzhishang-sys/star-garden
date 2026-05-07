@@ -570,15 +570,21 @@ html, body {
 .info-x:hover { background: rgba(255, 255, 255, 0.1); }
 
 @media (max-width: 640px) {
-  .brand { top: 18px; left: 18px; }
-  .brand h1 { font-size: 18px; }
-  .brand p { font-size: 11px; }
-  .top-controls { top: 18px; right: 14px; gap: 6px; }
+  .brand { top: 14px; left: 14px; gap: 10px; }
+  .brand-mark { width: 30px; height: 30px; }
+  .brand h1 { font-size: 17px; }
+  .brand p { display: none; }
+  .top-controls {
+    top: 58px; right: 14px; gap: 5px;
+    flex-wrap: wrap; justify-content: flex-end;
+    max-width: calc(100vw - 28px);
+  }
   .ctrl-btn { padding: 7px 10px; font-size: 11px; }
   .ctrl-btn span { display: none; }
-  .ctrl-panel { width: calc(100vw - 28px); right: 14px; }
+  .ctrl-panel { width: calc(100vw - 28px); right: 14px; top: 110px; }
   .hud { bottom: 18px; }
   .hud-hint { font-size: 9px; padding: 0 16px; }
+  .my-id-badge { bottom: 62px; left: 14px; }
 }
 
 /* ============= 星空编号 ID 徽章 ============= */
