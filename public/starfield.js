@@ -37,7 +37,7 @@
   let CFG = { ...DEFAULTS };
 
   /* ── 视口变换 ── */
-  const view = { x: 0, y: 0, scale: 1, targetScale: 1 };
+  const view = { x: 0, y: 0, scale: 0.4, targetScale: 0.4 };
 
   /* ════════════════════════════════════════════════
      主星
