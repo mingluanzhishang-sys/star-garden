@@ -589,12 +589,17 @@ html, body {
     left: 14px; right: 14px; top: 58px;
     max-width: none; border-radius: 12px;
     padding: 7px 12px; gap: 8px;
+    overflow: hidden; white-space: nowrap;
   }
   .visit-hint-text { display: none; }
   .visit-divider { display: none; }
-  .visit-who { font-size: 12px; }
+  .visit-who {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 12px;
+  }
   .visit-who strong { font-size: 13px; }
-  .visit-return-btn { padding: 4px 10px; font-size: 10px; margin-left: auto; }
+  .visit-return-btn { padding: 4px 10px; font-size: 10px; flex-shrink: 0; }
 }
 
 /* ============= 星空编号 ID 徽章 ============= */
