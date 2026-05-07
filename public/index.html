@@ -716,6 +716,59 @@ html, body {
   100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
 }
 
+/* ============= 虫洞过场动画 ============= */
+.wormhole {
+  position: fixed; inset: 0; z-index: 800;
+  display: grid; place-items: center;
+  pointer-events: none;
+  background: transparent;
+}
+.wormhole.wh-in {
+  animation: whDarken 0.65s cubic-bezier(0.4,0,0.8,1) forwards;
+}
+.wormhole.wh-out {
+  background: rgba(2,3,14,1);
+  animation: whBrighten 0.85s cubic-bezier(0.2,0,0.6,1) forwards;
+}
+@keyframes whDarken {
+  from { background: rgba(2,3,14,0); }
+  to   { background: rgba(2,3,14,1); }
+}
+@keyframes whBrighten {
+  from { background: rgba(2,3,14,1); }
+  to   { background: rgba(2,3,14,0); }
+}
+.wh-core {
+  position: absolute;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: hsla(185,100%,92%,1);
+  box-shadow:
+    0 0 20px 10px hsla(185,100%,75%,0.9),
+    0 0 60px 30px hsla(185,100%,60%,0.5),
+    0 0 120px 60px hsla(260,100%,65%,0.25);
+  animation: whCore 0.65s ease-out forwards;
+}
+@keyframes whCore {
+  0%   { transform: scale(0); opacity: 0; }
+  25%  { transform: scale(1); opacity: 1; }
+  100% { opacity: 1; }
+}
+.wh-ring {
+  position: absolute; border-radius: 50%;
+  border: 1.5px solid hsla(185,100%,78%,0.75);
+  box-shadow: 0 0 14px hsla(185,100%,70%,0.4), inset 0 0 8px hsla(185,100%,70%,0.15);
+  width: 0; height: 0;
+}
+.wh-ring:nth-child(2) { animation: whRing 0.75s cubic-bezier(0.15,0,0.7,1) 0.00s forwards; }
+.wh-ring:nth-child(3) { animation: whRing 0.75s cubic-bezier(0.15,0,0.7,1) 0.07s forwards; }
+.wh-ring:nth-child(4) { animation: whRing 0.75s cubic-bezier(0.15,0,0.7,1) 0.14s forwards; }
+.wh-ring:nth-child(5) { animation: whRing 0.75s cubic-bezier(0.15,0,0.7,1) 0.21s forwards; }
+.wh-ring:nth-child(6) { animation: whRing 0.75s cubic-bezier(0.15,0,0.7,1) 0.28s forwards; }
+@keyframes whRing {
+  from { width: 0;      height: 0;      opacity: 0.9; }
+  to   { width: 250vmax; height: 250vmax; opacity: 0;   }
+}
+
 /* ============= 探索星空弹窗专属光晕 ============= */
 .modal-glow.explore {
   background: radial-gradient(ellipse 30% 60% at 50% 50%, hsla(185, 100%, 65%, 0.22) 0%, transparent 70%);
@@ -901,6 +954,7 @@ function App() {
   const [visitError,     setVisitError]     = useState('');
   const [idCopied,       setIdCopied]       = useState(false);
   const [showToast,      setShowToast]      = useState(false);
+  const [wormhole,       setWormhole]       = useState(null); // null | 'in' | 'out'
   const visitModeRef  = useRef(false);
   const visitingIdRef = useRef('');
   const userIdRef     = useRef(userId);
@@ -999,26 +1053,34 @@ function App() {
       setVisitError('Garden not found — check the ID, or the owner hasn\'t planted any stars yet.');
       return;
     }
+    /* 关弹窗，启动虫洞入场 */
+    setShowVisitModal(false); setVisitInput(''); setVisitError('');
+    setSelected(null); setPlanting(null);
+    setWormhole('in');
+    await new Promise(r => setTimeout(r, 650));   /* 等屏幕暗透 */
     loadGardenIntoField(stars, connections);
     visitModeRef.current  = true;
     visitingIdRef.current = targetId;
     setVisitMode(true);
     setVisitingId(targetId);
-    setShowVisitModal(false);
-    setVisitInput('');
-    setVisitError('');
-    setSelected(null);
-    setPlanting(null);
+    setWormhole('out');
+    await new Promise(r => setTimeout(r, 900));
+    setWormhole(null);
   }, [loadGardenIntoField]);
 
   const exitVisitMode = useCallback(async () => {
     const { stars, connections } = await fetchGarden(userIdRef.current);
+    setWormhole('in');
+    await new Promise(r => setTimeout(r, 650));
     loadGardenIntoField(stars, connections);
     visitModeRef.current  = false;
     visitingIdRef.current = '';
     setVisitMode(false);
     setVisitingId('');
     setSelected(null);
+    setWormhole('out');
+    await new Promise(r => setTimeout(r, 900));
+    setWormhole(null);
   }, [loadGardenIntoField]);
 
   /* 配置同步 */
@@ -1767,6 +1829,18 @@ function App() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── 虫洞过场 ── */}
+      {wormhole && (
+        <div className={`wormhole wh-${wormhole}`}>
+          <div className="wh-core" />
+          <div className="wh-ring" />
+          <div className="wh-ring" />
+          <div className="wh-ring" />
+          <div className="wh-ring" />
+          <div className="wh-ring" />
         </div>
       )}
 
