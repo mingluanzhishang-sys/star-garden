@@ -1057,6 +1057,7 @@ function App() {
 
     const canvas = canvasRef.current;
     let downX = 0, downY = 0, dragX = 0, dragY = 0, isDown = false, moved = false, lastBgRipple = 0;
+    let pinching = false, lastPinchDist = 0;
 
     const screenToWorld = (cx, cy) => {
       const r  = canvas.getBoundingClientRect();
@@ -1068,6 +1069,7 @@ function App() {
     };
 
     const onPointerDown = (e) => {
+      if (pinching) return;
       isDown = true; moved = false;
       downX  = e.clientX; downY = e.clientY;
       dragX  = window.STARFIELD.view.x; dragY = window.STARFIELD.view.y;
@@ -1109,7 +1111,7 @@ function App() {
     };
 
     const onPointerUp = (e) => {
-      if (!isDown) return;
+      if (!isDown || pinching) return;
       isDown = false;
       if (moved) return;
 
@@ -1175,16 +1177,51 @@ function App() {
       window.STARFIELD.view.targetScale = Math.max(0.4, Math.min(3.5, window.STARFIELD.view.targetScale * f));
     };
 
+    /* 双指捏合缩放 */
+    const onTouchStart = (e) => {
+      if (e.touches.length === 2) {
+        pinching = true; isDown = false;
+        const t0 = e.touches[0], t1 = e.touches[1];
+        lastPinchDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        e.preventDefault();
+      }
+    };
+    const onTouchMove = (e) => {
+      if (e.touches.length === 2 && pinching) {
+        const t0 = e.touches[0], t1 = e.touches[1];
+        const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        if (lastPinchDist > 0) {
+          const f = dist / lastPinchDist;
+          window.STARFIELD.view.targetScale = Math.max(0.4, Math.min(3.5,
+            window.STARFIELD.view.targetScale * f));
+        }
+        lastPinchDist = dist;
+        e.preventDefault();
+      }
+    };
+    const onTouchEnd = (e) => {
+      if (e.touches.length < 2) {
+        pinching = false; lastPinchDist = 0;
+        isDown = false; moved = true; /* 捏合结束后不触发 tap */
+      }
+    };
+
     canvas.addEventListener('pointerdown', onPointerDown);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup',   onPointerUp);
-    canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('wheel',       onWheel,      { passive: false });
+    canvas.addEventListener('touchstart',  onTouchStart, { passive: false });
+    canvas.addEventListener('touchmove',   onTouchMove,  { passive: false });
+    canvas.addEventListener('touchend',    onTouchEnd);
     return () => {
       window.removeEventListener('resize',      onResize);
       canvas.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup',   onPointerUp);
       canvas.removeEventListener('wheel',       onWheel);
+      canvas.removeEventListener('touchstart',  onTouchStart);
+      canvas.removeEventListener('touchmove',   onTouchMove);
+      canvas.removeEventListener('touchend',    onTouchEnd);
     };
   }, []);
 
