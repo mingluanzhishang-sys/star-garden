@@ -5,10 +5,8 @@ gardens.json
 *.db
 *.db-journal
 
-# Music file — copyrighted, not included in repo
-# Download "Cornfield Chase" by Hans Zimmer and place at public/cornfield-chase.mp3
+# 根目录的旧版本不需要
 cornfield-chase.mp3
-public/cornfield-chase.mp3
 
 # Legacy dev files (superseded by public/)
 app.jsx
