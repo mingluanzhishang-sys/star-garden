@@ -921,6 +921,27 @@ function App() {
 
   const theme = THEMES[t.theme] || THEMES.midnight;
 
+  /* ── 定位到所有星星 ── */
+  const fitStars = useCallback(() => {
+    const field  = fieldRef.current;
+    const canvas = canvasRef.current;
+    if (!field || !canvas || field.stars.length === 0) return;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const s of field.stars) {
+      minX = Math.min(minX, s.x); maxX = Math.max(maxX, s.x);
+      minY = Math.min(minY, s.y); maxY = Math.max(maxY, s.y);
+    }
+    const W = canvas.clientWidth, H = canvas.clientHeight;
+    const pad = 120;
+    const scaleX = W / (maxX - minX + pad * 2);
+    const scaleY = H / (maxY - minY + pad * 2);
+    const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.4), 1.2);
+    window.STARFIELD.view.x           = W / 2 - (minX + maxX) / 2;
+    window.STARFIELD.view.y           = H / 2 - (minY + maxY) / 2;
+    window.STARFIELD.view.scale       = newScale;
+    window.STARFIELD.view.targetScale = newScale;
+  }, []);
+
   /* ── 花园切换工具函数 ── */
   const loadGardenIntoField = useCallback((stars, conns) => {
     const field = fieldRef.current;
@@ -935,15 +956,18 @@ function App() {
       s.spawnT = 1;
       for (const c of (d.companions || [])) field.addCompanion(s, { ...c, silent: true });
     }
-    // 恢复连线
     const starIdSet = new Set(field.stars.map(s => s.id));
     field.connections = (conns || []).filter(c => starIdSet.has(c.starA) && starIdSet.has(c.starB));
     setCount(field.stars.length);
     setConnCount(field.connections.length);
-    window.STARFIELD.view.x = 0;
-    window.STARFIELD.view.y = 0;
-    window.STARFIELD.view.targetScale = 1;
-  }, []);
+    /* 自动定位到星星，没有星星时重置视角 */
+    if (field.stars.length > 0) {
+      setTimeout(fitStars, 30); /* 等 canvas 尺寸稳定后再计算 */
+    } else {
+      window.STARFIELD.view.x = 0; window.STARFIELD.view.y = 0;
+      window.STARFIELD.view.scale = 0.4; window.STARFIELD.view.targetScale = 0.4;
+    }
+  }, [fitStars]);
 
   const enterVisitMode = useCallback(async (rawId) => {
     const targetId = rawId.trim().toUpperCase();
@@ -1047,6 +1071,7 @@ function App() {
       const validConns = (savedConns || []).filter(c => starIdSet.has(c.starA) && starIdSet.has(c.starB));
       field.connections = validConns;
       setConnCount(validConns.length);
+      if (field.stars.length > 0) setTimeout(fitStars, 50);
     });
     field.on('star-added', () => setCount(field.stars.length));
 
@@ -1328,13 +1353,20 @@ function App() {
         </button>
         <button className="ctrl-btn" title="Reset View" onClick={() => {
           window.STARFIELD.view.x = 0; window.STARFIELD.view.y = 0;
-          window.STARFIELD.view.targetScale = 1;
+          window.STARFIELD.view.targetScale = 0.4;
         }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8a5 5 0 1 0 2-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
             <path d="M3 4v4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span>Center</span>
+        </button>
+        <button className="ctrl-btn" title="Locate Stars" onClick={fitStars}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.4"/>
+            <path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <span>Locate</span>
         </button>
         <button className="ctrl-btn" title="Zoom In" onClick={() => {
           window.STARFIELD.view.targetScale = Math.min(3.5, window.STARFIELD.view.targetScale * 1.2);
