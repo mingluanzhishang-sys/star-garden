@@ -107,6 +107,19 @@ app.post('/api/garden/:id/companion', (req, res) => {
   res.json({ ok: true });
 });
 
+// GET random garden (from all gardens that have stars)
+app.get('/api/gardens/random', (req, res) => {
+  const exclude = (req.query.exclude || '').toUpperCase();
+  const ids = Object.keys(db.data).filter(id => {
+    if (id === exclude) return false;
+    const g = db.data[id];
+    return g && g.stars && g.stars.length > 0;
+  });
+  if (ids.length === 0) return res.status(404).json({ error: 'No other gardens yet' });
+  const id = ids[Math.floor(Math.random() * ids.length)];
+  res.json({ id, total: ids.length });
+});
+
 // Health check for Railway
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

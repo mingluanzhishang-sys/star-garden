@@ -969,6 +969,22 @@ function App() {
     }
   }, [fitStars]);
 
+  const enterRandomGarden = useCallback(async () => {
+    try {
+      const res = await fetch('/api/gardens/random?exclude=' + userIdRef.current);
+      if (!res.ok) {
+        setVisitError('还没有其他人的星空，成为第一个种星的人吧！');
+        setShowVisitModal(true);
+        return;
+      }
+      const { id } = await res.json();
+      await enterVisitMode(id);
+    } catch {
+      setVisitError('无法连接到服务器，请稍后再试。');
+      setShowVisitModal(true);
+    }
+  }, [enterVisitMode]);
+
   const enterVisitMode = useCallback(async (rawId) => {
     const targetId = rawId.trim().toUpperCase();
     if (!targetId) { setVisitError('Please enter a garden ID.'); return; }
@@ -1423,6 +1439,16 @@ function App() {
           </svg>
           <span>Explore</span>
         </button>
+        <button className="ctrl-btn" title="Wander into a random garden" onClick={enterRandomGarden}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M1 5h3l2 2-2 2H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M15 5h-3l-2 2 2 2h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M1 11l3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <path d="M15 11l-3.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="8" cy="7" r="1.5" fill="currentColor"/>
+          </svg>
+          <span>Wander</span>
+        </button>
       </div>
 
       {/* 控制面板 */}
@@ -1724,10 +1750,16 @@ function App() {
               Your ID: <span style={{ color: 'hsla(185,80%,78%,1)', fontFamily: 'Space Grotesk, monospace', letterSpacing: '0.12em' }}>{userId}</span>
               <br/>Share it with others so they can visit your garden.
             </p>
-            <div className="modal-actions">
-              <button className="btn-ghost" onClick={() => setShowVisitModal(false)}>Cancel</button>
-              <button className="btn-primary" onClick={() => enterVisitMode(visitInput)}>
-                Enter Garden ✦
+            <div className="modal-actions" style={{ flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', width: '100%' }}>
+                <button className="btn-ghost" onClick={() => setShowVisitModal(false)}>Cancel</button>
+                <button className="btn-primary" onClick={() => enterVisitMode(visitInput)}>
+                  Enter Garden ✦
+                </button>
+              </div>
+              <button className="btn-ghost" style={{ width: '100%', textAlign: 'center', borderColor: 'hsla(185,60%,55%,0.3)', color: 'hsla(185,80%,78%,1)' }}
+                onClick={() => { setShowVisitModal(false); enterRandomGarden(); }}>
+                ✦ Wander into a stranger's sky
               </button>
             </div>
           </div>
