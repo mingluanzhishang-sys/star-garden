@@ -1034,22 +1034,6 @@ function App() {
     }
   }, [fitStars]);
 
-  const enterRandomGarden = useCallback(async () => {
-    try {
-      const res = await fetch('/api/gardens/random?exclude=' + userIdRef.current);
-      if (!res.ok) {
-        setVisitError('还没有其他人的星空，成为第一个种星的人吧！');
-        setShowVisitModal(true);
-        return;
-      }
-      const { id } = await res.json();
-      await enterVisitMode(id);
-    } catch {
-      setVisitError('无法连接到服务器，请稍后再试。');
-      setShowVisitModal(true);
-    }
-  }, [enterVisitMode]);
-
   const enterVisitMode = useCallback(async (rawId) => {
     const targetId = rawId.trim().toUpperCase();
     if (!targetId) { setVisitError('Please enter a garden ID.'); return; }
@@ -1074,6 +1058,22 @@ function App() {
     await new Promise(r => setTimeout(r, 900));
     setWormhole(null);
   }, [loadGardenIntoField]);
+
+  const enterRandomGarden = useCallback(async () => {
+    try {
+      const res = await fetch('/api/gardens/random?exclude=' + userIdRef.current);
+      if (!res.ok) {
+        setVisitError('还没有其他人的星空，成为第一个种星的人吧！');
+        setShowVisitModal(true);
+        return;
+      }
+      const { id } = await res.json();
+      await enterVisitMode(id);
+    } catch {
+      setVisitError('无法连接到服务器，请稍后再试。');
+      setShowVisitModal(true);
+    }
+  }, [enterVisitMode]);
 
   const exitVisitMode = useCallback(async () => {
     const { stars, connections } = await fetchGarden(userIdRef.current);
