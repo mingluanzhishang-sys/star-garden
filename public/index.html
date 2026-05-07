@@ -585,9 +585,16 @@ html, body {
   .hud { bottom: 18px; }
   .hud-hint { font-size: 9px; padding: 0 16px; }
   .my-id-badge { bottom: 62px; left: 14px; }
-  .visit-banner { left: 14px; max-width: calc(100vw - 28px); top: 58px; border-radius: 12px; }
+  .visit-banner {
+    left: 14px; right: 14px; top: 58px;
+    max-width: none; border-radius: 12px;
+    padding: 7px 12px; gap: 8px;
+  }
   .visit-hint-text { display: none; }
   .visit-divider { display: none; }
+  .visit-who { font-size: 12px; }
+  .visit-who strong { font-size: 13px; }
+  .visit-return-btn { padding: 4px 10px; font-size: 10px; margin-left: auto; }
 }
 
 /* ============= 星空编号 ID 徽章 ============= */
