@@ -705,6 +705,61 @@ html, body {
 }
 .visit-return-btn:hover { background: rgba(255,255,255,0.12); color: var(--ink); }
 
+/* ============= 访客记录弹窗 ============= */
+.visitors-modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 2, 14, 0.72);
+  backdrop-filter: blur(6px);
+}
+.visitors-panel {
+  width: min(340px, calc(100vw - 40px));
+  background: rgba(10, 8, 28, 0.96);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+}
+.visitors-panel h3 {
+  font-family: var(--serif-zh);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px; justify-content: space-between;
+}
+.visitors-panel h3 button {
+  background: none; border: none; color: var(--ink-mute); cursor: pointer; font-size: 14px;
+}
+.visitor-list { display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.visitor-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 0.5px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+}
+.visitor-id {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: hsla(185, 80%, 80%, 1);
+}
+.visitor-time {
+  font-size: 11px;
+  color: var(--ink-mute);
+  letter-spacing: 0.04em;
+}
+.visitors-empty {
+  text-align: center;
+  padding: 28px 0;
+  color: var(--ink-mute);
+  font-size: 13px;
+  font-family: var(--serif);
+  font-style: italic;
+}
+
 /* ============= 访客操作提示 Toast ============= */
 .visit-toast {
   position: fixed; left: 50%; bottom: 108px;
@@ -902,11 +957,11 @@ async function fetchGarden(id) {
   try {
     const res = await fetch('/api/garden/' + id);
     if (!res.ok) throw new Error(res.status);
-    const { stars, connections } = await res.json();
+    const { stars, connections, visitors } = await res.json();
     /* 同步写入 localStorage 缓存 */
     localStorage.setItem(GARDEN_KEY(id), JSON.stringify(stars));
     localStorage.setItem(CONN_KEY(id), JSON.stringify(connections));
-    return { stars, connections };
+    return { stars, connections, visitors: visitors || [] };
   } catch {
     /* 离线 / 服务器不可用时读本地缓存 */
     try {
@@ -966,6 +1021,8 @@ function App() {
   const [idCopied,       setIdCopied]       = useState(false);
   const [showToast,      setShowToast]      = useState(false);
   const [wormhole,       setWormhole]       = useState(null); // null | 'in' | 'out'
+  const [visitors,       setVisitors]       = useState([]);
+  const [showVisitors,   setShowVisitors]   = useState(false);
   const visitModeRef  = useRef(false);
   const visitingIdRef = useRef('');
   const userIdRef     = useRef(userId);
@@ -1058,6 +1115,12 @@ function App() {
     visitingIdRef.current = targetId;
     setVisitMode(true);
     setVisitingId(targetId);
+    /* 记录访问 fire-and-forget */
+    fetch('/api/garden/' + targetId + '/visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorId: userIdRef.current }),
+    }).catch(() => {});
     setWormhole('out');
     await new Promise(r => setTimeout(r, 900));
     setWormhole(null);
@@ -1080,10 +1143,11 @@ function App() {
   }, [enterVisitMode]);
 
   const exitVisitMode = useCallback(async () => {
-    const { stars, connections } = await fetchGarden(userIdRef.current);
+    const { stars, connections, visitors: freshVisitors } = await fetchGarden(userIdRef.current);
     setWormhole('in');
     await new Promise(r => setTimeout(r, 650));
     loadGardenIntoField(stars, connections);
+    if (freshVisitors && freshVisitors.length) setVisitors(freshVisitors);
     visitModeRef.current  = false;
     visitingIdRef.current = '';
     setVisitMode(false);
@@ -1149,7 +1213,8 @@ function App() {
 
     /* 加载已保存星星（自己的花园，优先从服务器拉取） */
     const myId = userIdRef.current;
-    fetchGarden(myId).then(({ stars: saved, connections: savedConns }) => {
+    fetchGarden(myId).then(({ stars: saved, connections: savedConns, visitors: savedVisitors }) => {
+      if (savedVisitors && savedVisitors.length) setVisitors(savedVisitors);
       for (const d of saved) {
         const s = field.addStar(d.x, d.y, {
           id: d.id, r: d.r, hue: d.hue,
@@ -1484,6 +1549,14 @@ function App() {
             <circle cx="12" cy="10.5" r="2" stroke="currentColor" strokeWidth="1.4"/>
           </svg>
         </button>
+        {!visitMode && <button className="ctrl-btn" title="Visitor Log" onClick={() => setShowVisitors(true)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4"/>
+            <path d="M1.5 13.5c0-2.5 2-4 4.5-4s4.5 1.5 4.5 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            <path d="M11 7.5h3M12.5 6v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+          </svg>
+          <span>Visitors{visitors.length > 0 ? ` (${visitors.length})` : ''}</span>
+        </button>}
         {!visitMode && <button className={'ctrl-btn' + (connectMode ? ' connect-mode-active' : '')}
           title={connectMode ? 'Exit Connect Mode' : 'Connect Stars'}
           onClick={() => {
@@ -1843,6 +1916,30 @@ function App() {
         </div>
       )}
 
+      {/* ── 访客记录 ── */}
+      {showVisitors && (
+        <div className="visitors-modal" onClick={() => setShowVisitors(false)}>
+          <div className="visitors-panel" onClick={e => e.stopPropagation()}>
+            <h3>
+              <span>✦ Visitor Log</span>
+              <button onClick={() => setShowVisitors(false)}>✕</button>
+            </h3>
+            {visitors.length === 0 ? (
+              <div className="visitors-empty">No visitors yet — share your garden ID</div>
+            ) : (
+              <div className="visitor-list">
+                {visitors.map((v, i) => (
+                  <div key={i} className="visitor-row">
+                    <span className="visitor-id">{v.id}</span>
+                    <span className="visitor-time">{timeAgo(v.at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ── 虫洞过场 ── */}
       {wormhole && (
         <div className={`wormhole wh-${wormhole}`}>
@@ -1862,6 +1959,14 @@ function App() {
 
 /* 辅助：随机数（供 openCompanion 用） */
 function rand(a, b) { return a + Math.random() * (b - a); }
+
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60)   return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' hr ago';
+  return Math.floor(s / 86400) + ' day' + (Math.floor(s / 86400) > 1 ? 's' : '') + ' ago';
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>

@@ -107,6 +107,24 @@ app.post('/api/garden/:id/companion', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST visit (visitor announces themselves)
+app.post('/api/garden/:id/visit', (req, res) => {
+  const id = req.params.id.toUpperCase();
+  const visitorId = String(req.body.visitorId || '').toUpperCase();
+  if (!ID_RE.test(visitorId)) return res.status(400).json({ error: 'Invalid visitor ID' });
+  if (visitorId === id)       return res.status(400).json({ error: 'Cannot visit own garden' });
+
+  const row = db.get(id);
+  if (!row) return res.status(404).json({ error: 'Garden not found' });
+
+  const visitors = (row.visitors || []).filter(v => v.id !== visitorId); // dedup
+  visitors.unshift({ id: visitorId, at: Date.now() });
+  if (visitors.length > 50) visitors.length = 50;
+  db.data[id] = { ...row, visitors };
+  db._save();
+  res.json({ ok: true });
+});
+
 // GET random garden (from all gardens that have stars)
 app.get('/api/gardens/random', (req, res) => {
   const exclude = (req.query.exclude || '').toUpperCase();
