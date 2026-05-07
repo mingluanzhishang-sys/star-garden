@@ -1,0 +1,27 @@
+node_modules/
+
+# Garden data — persisted by Railway volume, not committed
+gardens.json
+*.db
+*.db-journal
+
+# Music file — copyrighted, not included in repo
+# Download "Cornfield Chase" by Hans Zimmer and place at public/cornfield-chase.mp3
+cornfield-chase.mp3
+public/cornfield-chase.mp3
+
+# Legacy dev files (superseded by public/)
+app.jsx
+tweaks-panel.jsx
+index.html
+starfield.js
+
+# Claude Code tooling
+.claude/
+
+# Environment
+.env
+
+# OS
+.DS_Store
+Thumbs.db
