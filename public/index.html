@@ -1814,7 +1814,7 @@ function App() {
                         }),
                         o ? o.planter : '(deleted star)'
                       ),
-                      React.createElement('button', {
+                      !visitMode && React.createElement('button', {
                         onClick: function() { if (fieldRef.current) fieldRef.current.removeConnection(c.id); },
                         style: { background: 'rgba(255,255,255,0.05)', border: '0.5px solid rgba(255,255,255,0.15)',
                                  color: 'var(--ink-mute)', borderRadius: '6px', cursor: 'pointer',
